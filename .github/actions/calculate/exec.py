@@ -10,6 +10,8 @@ context = json.loads(os.getenv('COMMAND_CONTEXT'))
 issue_input = context["event"]["issue"]["body"]
 
 print(issue_input)
+# print(os.getenv('COMMAND_CONTEXT'))
+issue_id = context["event"]["issue"]["number"]
 
 project = Project()
 project.get(org, project_id)
@@ -26,7 +28,7 @@ def parse_input(input, search_string):
 
     if x is None:
         print('Level "%s" not found' % search_string)
-        exit()
+        return None
     else:
         return x.group(1)
 
@@ -58,23 +60,28 @@ def update_project_levels(project, input):
     """
     Update the project levels based on the input from the issue
     """
-    levels = [
-        'Impact Level', 'Effort Level', 'Confidence Level', 'Risk Level'
-    ]
-    
+    levels = ['Impact Level', 'Effort Level', 'Confidence Level', 'Risk Level']
     for level in levels:
+        print('Updating level: %s' % level)
+
         input = parse_input(issue_input, level)
+        if input is None:
+            continue
+
         field = find_field(project, level)
 
         # Find the option for the new field value
         option = find_option(field, input)
 
-    # Update the project with the new values
+        # Update the project with the new values
         items = project.get_items()
         for item in items:
-            print('Item title: %s' % item.title)
-            res = item.update_field_value(project, field, option)
-            print(res)
+            if item.number == issue_id:
+                print('Updating item title: %s' % item.title)
+                res = item.update_field_value(project, field, option)
+                # print(res)
+
+            print('Item %s not found to update' % issue_id)
 
 # Run it!
 update_project_levels(project, issue_input)
